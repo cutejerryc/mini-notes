@@ -1,0 +1,27 @@
+{
+  "schema": "executa/2025-01",
+  "name": "tool-dev-summarizer",
+  "display_name": "Notes Summarizer",
+  "version": "0.1.0",
+  "description": "Summarizes notes using host LLM via sampling",
+  "runtime": "native",
+  "host_capabilities": ["llm.sample"],
+  "tools": [
+    {
+      "name": "summarize",
+      "display_name": "Summarize Notes",
+      "description": "Summarizes a list of notes using LLM",
+      "parameters": [
+        {
+          "name": "notes",
+          "type": "array",
+          "description": "List of note contents to summarize",
+          "items": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ]
+    }
+  ]
+}

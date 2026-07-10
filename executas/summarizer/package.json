@@ -1,0 +1,12 @@
+{
+  "name": "tool-dev-summarizer",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --loader ts-node/esm index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}

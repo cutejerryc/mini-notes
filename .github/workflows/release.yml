@@ -1,0 +1,161 @@
+name: Release Executa Tool
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Release (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - platform: darwin-arm64
+            runner: macos-latest
+            archive_ext: tar.gz
+          - platform: darwin-x86_64
+            runner: macos-latest
+            archive_ext: tar.gz
+          - platform: windows-x86_64
+            runner: windows-latest
+            archive_ext: zip
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (root)
+        run: npm ci
+        working-directory: .
+
+      - name: Build frontend bundle
+        run: npm run build
+        working-directory: .
+
+      - name: Install Executa dependencies
+        run: npm install
+        working-directory: ./executas/summarizer
+
+      - name: Build Executa Tool
+        run: npx tsc
+        working-directory: ./executas/summarizer
+
+      - name: Create archive directory
+        run: mkdir -p dist/archives
+
+      - name: Prepare staging directory
+        shell: bash
+        run: |
+          STAGING_DIR="dist/archives/staging-${{ matrix.platform }}"
+          rm -rf "$STAGING_DIR"
+          mkdir -p "$STAGING_DIR"
+          
+          # Copy built files
+          cp executas/summarizer/dist/index.js "$STAGING_DIR/"
+          cp executas/summarizer/manifest.json "$STAGING_DIR/"
+          
+          # Create runner script
+          cat > "$STAGING_DIR/run.sh" << 'RUNNER'
+          #!/bin/bash
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          exec node "$SCRIPT_DIR/index.js" "$@"
+          RUNNER
+          chmod +x "$STAGING_DIR/run.sh"
+          
+          # Create archive manifest for Anna binary distribution
+          cat > "$STAGING_DIR/archive-manifest.json" << MANIFEST
+          {
+            "schema": "executa-archive/2025-01",
+            "tool_id": "tool-dev-summarizer",
+            "version": "0.1.0",
+            "platform": "${{ matrix.platform }}",
+            "entrypoint": "run.sh",
+            "files": ["index.js", "manifest.json", "run.sh"]
+          }
+          MANIFEST
+
+      - name: Create archive (macOS/Linux)
+        if: runner.os == 'macOS' || runner.os == 'Linux'
+        shell: bash
+        run: |
+          cd dist/archives/staging-${{ matrix.platform }}
+          tar -czf "../tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}" .
+          cd ../..
+          echo "ARCHIVE_PATH=dist/archives/tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}" >> $GITHUB_ENV
+
+      - name: Create archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/archives/staging-${{ matrix.platform }}/*" -DestinationPath "dist/archives/tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}" -Force
+          echo "ARCHIVE_PATH=dist/archives/tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}" >> $env:GITHUB_ENV
+
+      - name: Smoke test - verify archive exists
+        shell: bash
+        run: |
+          ls -la dist/archives/
+          test -f "dist/archives/tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}"
+
+      - name: Smoke test - extract and verify manifest
+        shell: bash
+        run: |
+          mkdir -p dist/verify
+          cd dist/verify
+          if [[ "${{ matrix.archive_ext }}" == "tar.gz" ]]; then
+            tar -xzf "../archives/tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}"
+          else
+            unzip "../archives/tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}"
+          fi
+          echo "=== Archive contents ==="
+          ls -la
+          echo "=== manifest.json ==="
+          cat manifest.json
+          test -f manifest.json
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tool-dev-summarizer-${{ matrix.platform }}
+          path: dist/archives/tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}
+
+      - name: Upload to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/archives/tool-dev-summarizer-${{ matrix.platform }}.${{ matrix.archive_ext }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-release:
+    name: Publish Release Assets
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: tool-dev-summarizer-*
+          merge-multiple: true
+          path: ./release-assets
+
+      - name: List release assets
+        run: ls -la ./release-assets/
+
+      - name: Upload all assets to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

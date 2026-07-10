@@ -1,0 +1,42 @@
+{
+  "schema": "anna-app/2025-01",
+  "name": "mini-notes-with-llm-summary",
+  "display_name": "Mini Notes with LLM Summary",
+  "version": "0.1.0",
+  "description": "A minimal notes app with LLM-powered summarization via Executa Tool",
+  "slug": "mini-notes-with-llm-summary",
+  "required_executas": [
+    {
+      "tool_id": "tool-dev-summarizer",
+      "slug": "summarizer"
+    }
+  ],
+  "permissions": {
+    "storage": ["read", "write"],
+    "tools": ["invoke"]
+  },
+  "ui": {
+    "bundle": {
+      "entry": "./bundle/index.html"
+    },
+    "views": [
+      {
+        "name": "default",
+        "display_name": "Notes",
+        "path": "/"
+      }
+    ],
+    "host_api": {
+      "storage": true,
+      "tools": true
+    }
+  },
+  "dev": {
+    "executas": [
+      {
+        "dir": "./executas/summarizer",
+        "tool_id": "tool-dev-summarizer"
+      }
+    ]
+  }
+}
