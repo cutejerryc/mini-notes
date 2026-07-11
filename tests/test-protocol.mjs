@@ -10,8 +10,11 @@
 
 import { spawn } from "node:child_process";
 import { strict as assert } from "node:assert";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 
-const TOOL_PATH = new URL("../executa/index.js", import.meta.url).pathname;
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TOOL_PATH = resolve(__dirname, "..", "executa", "index.js");
 
 let passed = 0;
 let failed = 0;
