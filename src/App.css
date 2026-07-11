@@ -1,0 +1,185 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  background: #f5f5f5;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+
+.app-container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.status-connecting {
+  text-align: center;
+  padding: 40px 0;
+  color: #888;
+}
+
+.error-banner {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.hint code {
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.note-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.note-input:focus {
+  border-color: #2563eb;
+}
+
+button {
+  padding: 10px 18px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.note-list {
+  margin-bottom: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 24px 0;
+  font-size: 0.9rem;
+}
+
+.note-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.note-index {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  min-width: 28px;
+}
+
+.note-content {
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+.delete-btn {
+  background: transparent;
+  color: #94a3b8;
+  padding: 4px 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.delete-btn:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.summary-section {
+  margin-top: 8px;
+}
+
+.summary-error {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.summary-result {
+  margin-top: 8px;
+  padding: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.summary-result strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #166534;
+}
+
+.summary-result p {
+  color: #1a1a1a;
+  white-space: pre-wrap;
+}
+
+.storage-hint {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.storage-hint code {
+  background: #eee;
+  padding: 1px 4px;
+  border-radius: 3px;
+}

@@ -1,0 +1,22 @@
+{
+  "display_name": "Mini Notes Summarizer",
+  "version": "0.1.0",
+  "description": "Summarizes notes by asking the host to sample an LLM.",
+  "host_capabilities": ["llm.sample"],
+  "tools": [
+    {
+      "name": "summarize",
+      "description": "Summarize all current notes into a concise summary.",
+      "parameters": [
+        {
+          "name": "notes",
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Array of note objects with id, content, createdAt",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "runtime": { "type": "node", "min_version": "18.0.0" }
+}

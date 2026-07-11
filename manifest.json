@@ -1,0 +1,52 @@
+{
+  "schema": 2,
+  "name": "mini-notes",
+  "version": "1.0.0",
+  "permissions": [
+    "chat.write_message",
+    "tools.invoke"
+  ],
+  "required_executas": [
+    {
+      "tool_id": "bundled:mini-notes-summarizer",
+      "min_version": "0.1.0",
+      "version": "latest"
+    }
+  ],
+  "optional_executas": [],
+  "system_prompt_addendum": "The user has the Mini Notes app open. They can create, view, and delete notes stored via anna.storage. They can also summarize all notes via the bundled summarizer Executa tool which uses sampling/createMessage to borrow the host LLM.",
+  "tags": ["notes", "summarize", "executa", "sampling"],
+  "ui": {
+    "bundle": {
+      "format": "static-spa",
+      "entry": "dist/index.html",
+      "external_origins": []
+    },
+    "views": [
+      {
+        "name": "main",
+        "title": "Mini Notes",
+        "default": true,
+        "entry": "dist/index.html",
+        "min_size": { "w": 400, "h": 500 },
+        "default_size": { "w": 500, "h": 700 },
+        "resizable": true,
+        "movable": true,
+        "single_instance": true
+      }
+    ],
+    "host_api": {
+      "storage": ["get", "set", "list", "delete"],
+      "tools": ["required:*"],
+      "window": ["set_title"]
+    },
+    "csp_overrides": {
+      "script-src": ["'self'"]
+    },
+    "state_merge": "last_writer_wins"
+  },
+  "dev": {
+    "fixtures": ["tests/mock-sampling.jsonl"],
+    "user_id": 1
+  }
+}

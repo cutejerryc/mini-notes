@@ -1,0 +1,184 @@
+name: Release Executa Binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to create (e.g., v0.1.0). Leave empty to skip tagging."
+        required: false
+        type: string
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: "Build ${{ matrix.target.plat }}"
+    strategy:
+      matrix:
+        target:
+          - plat: darwin-arm64
+            runner: macos-latest
+            archive_ext: .tar.gz
+          - plat: darwin-x86_64
+            runner: macos-latest
+            archive_ext: .tar.gz
+          - plat: windows-x86_64
+            runner: windows-latest
+            archive_ext: .zip
+    runs-on: ${{ matrix.target.runner }}
+
+    defaults:
+      run:
+        working-directory: executa
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install --no-save pkg
+        shell: bash
+
+      - name: Build binary for ${{ matrix.target.plat }}
+        id: build
+        run: |
+          ENTRY="index.js"
+          PLAT_KEY="${{ matrix.target.plat }}"
+
+          if [[ "$PLAT_KEY" == *"windows"* ]]; then
+            PKG_TARGET="node18-win-x64"
+            EXT=".exe"
+          elif [[ "$PLAT_KEY" == *"arm64" ]]; then
+            PKG_TARGET="node18-macos-arm64"
+            EXT=""
+          else
+            PKG_TARGET="node18-macos-x64"
+            EXT=""
+          fi
+
+          BINARY_NAME="mini-notes-summarizer${EXT}"
+          ARCHIVE_DIR="mini-notes-summarizer-${PLAT_KEY}"
+
+          echo "Building for ${PLAT_KEY} (pkg target: ${PKG_TARGET})..."
+          npx pkg "$ENTRY" --target "$PKG_TARGET" --output "dist/pkg-bin/${BINARY_NAME}" -C "GPL"
+
+          # Prepare archive directory
+          mkdir -p "dist/${ARCHIVE_DIR}"
+          cp "dist/pkg-bin/${BINARY_NAME}" "dist/${ARCHIVE_DIR}/${BINARY_NAME}"
+          chmod +x "dist/${ARCHIVE_DIR}/${BINARY_NAME}"
+
+          # Write archive manifest
+          cat > "dist/${ARCHIVE_DIR}/manifest.json" <<MANIFEST_EOF
+        {
+          "display_name": "Mini Notes Summarizer",
+          "version": "0.1.0",
+          "description": "Summarizes notes by asking the host to sample an LLM.",
+          "host_capabilities": ["llm.sample"],
+          "runtime": {
+            "binary": {
+              "entrypoint": "${BINARY_NAME}"
+            }
+          }
+        }
+        MANIFEST_EOF
+
+          # Package archive
+          if [[ "$PLAT_KEY" == *"windows"* ]]; then
+            ARCHIVE_NAME="${ARCHIVE_DIR}.zip"
+            if command -v zip &>/dev/null; then
+              cd dist && zip -r "../${ARCHIVE_NAME}" "${ARCHIVE_DIR}" && cd ..
+            else
+              7z a -tzip "${ARCHIVE_NAME}" "dist/${ARCHIVE_DIR}"
+            fi
+          else
+            ARCHIVE_NAME="${ARCHIVE_DIR}.tar.gz"
+            tar -czf "${ARCHIVE_NAME}" -C dist "${ARCHIVE_DIR}"
+          fi
+
+          echo "archive_path=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
+          echo "archive_name=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Smoke test binary
+        shell: bash
+        run: |
+          ARCHIVE_NAME="${{ steps.build.outputs.archive_name }}"
+          PLAT_KEY="${{ matrix.target.plat }}"
+          ARCHIVE_DIR="mini-notes-summarizer-${PLAT_KEY}"
+
+          # Extract archive
+          if [[ "$PLAT_KEY" == *"windows"* ]]; then
+            unzip -o "${ARCHIVE_NAME}" -d "smoke-test-${PLAT_KEY}"
+          else
+            tar -xzf "${ARCHIVE_NAME}" -C "smoke-test-${PLAT_KEY}" 2>/dev/null || \
+            mkdir -p "smoke-test-${PLAT_KEY}" && tar -xzf "${ARCHIVE_NAME}" -C "smoke-test-${PLAT_KEY}"
+          fi
+
+          BINARY_PATH="smoke-test-${PLAT_KEY}/${ARCHIVE_DIR}/mini-notes-summarizer"
+          [[ "$PLAT_KEY" == *"windows"* ]] && BINARY_PATH="${BINARY_PATH}.exe"
+
+          if [[ ! -f "$BINARY_PATH" ]]; then
+            echo "Binary not found at ${BINARY_PATH}"
+            find "smoke-test-${PLAT_KEY}" -type f
+            exit 1
+          fi
+
+          echo "Running smoke test on ${BINARY_PATH}..."
+          RESULT=$(echo '{"jsonrpc":"2.0","method":"describe","id":1}' | "$BINARY_PATH" 2>/dev/null)
+          echo "Response: $RESULT"
+
+          # Validate response
+          echo "$RESULT" | node -e "
+            const d = require('fs').readFileSync('/dev/stdin','utf8').trim();
+            const r = JSON.parse(d);
+            if (!r.result || r.result.display_name !== 'Mini Notes Summarizer') {
+              process.exit(1);
+            }
+            if (!r.result.host_capabilities || !r.result.host_capabilities.includes('llm.sample')) {
+              process.exit(1);
+            }
+            console.log('Smoke test PASSED');
+          "
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ steps.build.outputs.archive_path }}
+          asset_name: ${{ steps.build.outputs.archive_name }}
+          asset_content_type: application/gzip
+
+      - name: Upload build artifact (workflow retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.archive_name }}
+          path: ${{ steps.build.outputs.archive_path }}
+
+  # Create tag when workflow_dispatch with a tag input
+  tag:
+    name: Tag release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
+    needs: [build]
+    steps:
+      - name: Create tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ inputs.tag }}';
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${tag}`,
+              sha: context.sha
+            });

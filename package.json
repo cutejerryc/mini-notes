@@ -1,0 +1,28 @@
+{
+  "name": "mini-notes-anna-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "validate": "anna-app validate --strict",
+    "dev:harness": "anna-app dev --no-llm",
+    "build:binary": "cd executa && node build-binary.js",
+    "build:binary:all": "cd executa && node build-binary.js --all",
+    "test:protocol": "bash tests/test-protocol.sh",
+    "test:executa": "cd executa && node -e \"const rl=require('readline');const s=require('fs').createReadStream(process.stdin.fd);const i=rl.createInterface({input:s});let r='';i.on('line',l=>{r+=JSON.stringify(JSON.parse(l))+'\\n'});i.on('close',()=>{const l=r.trim().split('\\n');const ok=l.length>0;console.log(ok?'PASS: '+l.length+' responses':'FAIL');process.exit(ok?0:1)});\""
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  }
+}

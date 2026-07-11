@@ -1,0 +1,1 @@
+{"id":"mock-001","result":{"content":{"type":"text","text":"Mocked Summary: This is a test summary from the mock sampling fixture. The notes cover three main topics: client follow-up tasks, bug fixes, and workshop content ideas."},"model":"mock-model","stopReason":"endTurn"}}

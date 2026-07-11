@@ -1,0 +1,17 @@
+{
+  "name": "mini-notes-summarizer",
+  "version": "0.1.0",
+  "description": "Executa tool for Mini Notes — summarizes notes via host LLM sampling",
+  "main": "index.js",
+  "bin": {
+    "mini-notes-summarizer": "./index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test:describe": "echo '{\"jsonrpc\":\"2.0\",\"method\":\"describe\",\"id\":1}' | node index.js 2>/dev/null",
+    "build": "node build-binary.js"
+  }
+}
