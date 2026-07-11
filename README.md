@@ -78,7 +78,7 @@ cd executa && npm install && cd ..
 npm run build
 ```
 
-This produces `dist/index.html` and associated assets.
+This produces `bundle/index.html` and associated assets.
 
 ### 3. Validate the manifest
 
@@ -279,7 +279,7 @@ The app-level manifest declares:
 
 ### Bundle
 
-The frontend is built as a `static-spa` bundle. `npm run build` outputs to `dist/`. The `manifest.json`'s `ui.bundle.entry` points to `dist/index.html`.
+The frontend is built as a `static-spa` bundle. `npm run build` outputs to `bundle/`. The `manifest.json`'s `ui.bundle.entry` points to `bundle/index.html`.
 
 ### Executa Tool
 
